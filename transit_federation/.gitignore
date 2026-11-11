@@ -1,0 +1,20 @@
+# Compiled Java files
+*.class
+
+# Build output
+/bin/
+/target/
+/build/
+
+# Eclipse local workspace settings
+.metadata/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local secrets
+.env

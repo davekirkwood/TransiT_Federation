@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objectModel
+    xmlns="http://standards.ieee.org/IEEE1516-2010"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <modelIdentification>
+        <name>SimpleFederation</name>
+        <type>FOM</type>
+        <version>1.0</version>
+        <modificationDate>2026-11-10</modificationDate>
+        <securityClassification>Unclassified</securityClassification>
+        <purpose>Simple Portico interaction and time demonstration</purpose>
+        <applicationDomain>Simulation</applicationDomain>
+        <description>Three string messages and one time tick interaction</description>
+    </modelIdentification>
+
+    <objects>
+        <objectClass>
+            <name>HLAobjectRoot</name>
+        </objectClass>
+    </objects>
+
+    <interactions>
+        <interactionClass>
+            <name>HLAinteractionRoot</name>
+
+            <interactionClass>
+                <name>A_Message</name>
+                <parameter>
+                    <name>Text</name>
+                    <dataType>HLAASCIIstring</dataType>
+                </parameter>
+            </interactionClass>
+
+            <interactionClass>
+                <name>B_Message</name>
+                <parameter>
+                    <name>Text</name>
+                    <dataType>HLAASCIIstring</dataType>
+                </parameter>
+            </interactionClass>
+
+            <interactionClass>
+                <name>C_Message</name>
+                <parameter>
+                    <name>Text</name>
+                    <dataType>HLAASCIIstring</dataType>
+                </parameter>
+            </interactionClass>
+
+            <interactionClass>
+                <name>TimeTick</name>
+                <parameter>
+                    <name>Time</name>
+                    <dataType>HLAfloat64BE</dataType>
+                </parameter>
+            </interactionClass>
+
+            <interactionClass>
+                <name>StopSimulation</name>
+            </interactionClass>
+
+        </interactionClass>
+    </interactions>
+</objectModel>
