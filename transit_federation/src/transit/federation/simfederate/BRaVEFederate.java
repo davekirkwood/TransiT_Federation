@@ -70,6 +70,6 @@ public class BRaVEFederate extends TransitFederate {
 	}
 
 	public static void main(String[] args) throws Exception {
-		new BRaVEFederate().runUntilStopped();
+		new BRaVEFederate().start();
 	}
 }

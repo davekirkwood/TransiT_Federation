@@ -15,11 +15,8 @@ import hla.rti1516e.TransportationTypeHandle;
 
 public abstract class TransitFederate {
 
-	protected static final int TOTAL_FEDERATES = 3;
 
 	protected static final String FEDERATION_NAME = "TransiTFederation";
-
-	private static int stillJoined = TOTAL_FEDERATES;
 
 	protected final String federateName;
 
@@ -80,8 +77,7 @@ public abstract class TransitFederate {
 			if (joined) {
 				rtiamb.resignFederationExecution(ResignAction.DELETE_OBJECTS);
 				joined = false;
-				stillJoined--;
-				System.out.println(federateName + " resigned. Still joined: " + stillJoined);
+				System.out.println(federateName + " resigned.");
 			}
 
 			rtiamb.disconnect();
@@ -90,25 +86,18 @@ public abstract class TransitFederate {
 		System.out.println(federateName + " stopped.");
 	}
 
-	public static int getStillJoined() {
-		return stillJoined;
-	}
-
-
-
-
-	public void runUntilStopped() throws Exception {
-		start();
-
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			try {
-				stop();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}));
-
-		// Keep the application alive
-		Thread.currentThread().join();
-	}
+//	public void runUntilStopped() throws Exception {
+//		start();
+//
+//		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+//			try {
+//				stop();
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}));
+//
+//		// Keep the application alive
+//		Thread.currentThread().join();
+//	}
 }

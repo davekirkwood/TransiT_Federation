@@ -53,6 +53,6 @@ public class SUMOFederate extends TransitFederate {
 	}
 
 	public static void main(String[] args) throws Exception {
-		new SUMOFederate().runUntilStopped();
+		new SUMOFederate().start();
 	}
 }

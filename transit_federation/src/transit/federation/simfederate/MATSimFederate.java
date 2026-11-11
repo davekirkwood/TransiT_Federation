@@ -123,18 +123,18 @@ public class MATSimFederate extends TransitFederate {
 		matsim.start();
 		matsim.simulate();
 
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			try {
-				matsim.stop();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}));
-
-		// Give BRaVE time to join and subscribe.
-		Thread.sleep(3000);
-
-		Thread.currentThread().join();
+//		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+//			try {
+//				matsim.stop();
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}));
+//
+//		// Give BRaVE time to join and subscribe.
+//		Thread.sleep(3000);
+//
+//		Thread.currentThread().join();
 
 	}
 

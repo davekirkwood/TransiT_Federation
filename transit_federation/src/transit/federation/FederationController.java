@@ -38,7 +38,6 @@ public class FederationController {
 		// 4. Create the federation
 		try {
 			rtiamb.createFederationExecution(FEDERATION_NAME, fom);
-
 			System.out.println("Federation created: " + FEDERATION_NAME);
 
 		} catch (FederationExecutionAlreadyExists e) {
@@ -57,12 +56,6 @@ public class FederationController {
 	public void stop() throws Exception {
 
 		System.out.println("Stopping federation...");
-
-		// Wait for all federates to stop
-		while (transit.federation.federate.TransitFederate.getStillJoined() > 0) {
-			System.out.println("Waiting for federates to stop... Still joined: " + TransitFederate.getStillJoined());
-			Thread.sleep(1000);
-		}
 
 		// Now all federates have resigned, safely destroy the federation
 		try {
