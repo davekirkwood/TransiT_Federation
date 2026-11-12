@@ -85,18 +85,5 @@ public abstract class TransitFederate {
 		System.out.println(federateName + " stopped.");
 	}
 
-	public void runUntilStopped() throws Exception {
-		start();
 
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			try {
-				stop();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}));
-
-		// Keep the application alive
-		Thread.currentThread().join();
-	}
 }

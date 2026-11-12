@@ -59,8 +59,8 @@ public class MATSimFederate extends TransitFederate {
 				try {
 					if (simulationTime >= 10.0) {
 						sendStopMessage();
-						stop();
 						sendFederateShutdown();
+						stop();
 						break;
 					} else {
 						sendTimeTick(simulationTime);
