@@ -60,6 +60,10 @@
                 <name>StopSimulation</name>
             </interactionClass>
 
+            <interactionClass>
+                <name>FederateShutdown</name>
+            </interactionClass>
+
         </interactionClass>
     </interactions>
 </objectModel>

@@ -35,6 +35,12 @@ public class MATSimFederate extends TransitFederate {
 		rtiamb.publishInteractionClass(stopHandle);
 		
 		/*
+		 * Federate Shutdown (Send)
+		 */
+		federateShutdownHandle = rtiamb.getInteractionClassHandle("FederateShutdown");
+		rtiamb.publishInteractionClass(federateShutdownHandle);
+
+		/*
 		 * Test Message (Publish)
 		 */
 		aMessageHandle = rtiamb.getInteractionClassHandle("A_Message");
@@ -44,6 +50,8 @@ public class MATSimFederate extends TransitFederate {
 
 	}
 
+	private InteractionClassHandle federateShutdownHandle;
+
 	public void simulate() {
 		tickThread = new Thread(() -> {
 			double simulationTime = 0.0;
@@ -52,6 +60,7 @@ public class MATSimFederate extends TransitFederate {
 					if (simulationTime >= 10.0) {
 						sendStopMessage();
 						stop();
+						sendFederateShutdown();
 						break;
 					} else {
 						sendTimeTick(simulationTime);
@@ -71,6 +80,15 @@ public class MATSimFederate extends TransitFederate {
 			}
 		}, federateName + "-TimeTick");
 		tickThread.start();
+	}
+
+	/**
+	 * Send FederateShutdown interaction
+	 * @throws Exception
+	 */
+	private void sendFederateShutdown() throws Exception {
+		rtiamb.sendInteraction(federateShutdownHandle, rtiamb.getParameterHandleValueMapFactory().create(1), federateName.getBytes(StandardCharsets.UTF_8));
+		System.out.println(federateName + " SENT FederateShutdown");
 	}
 
 	/**

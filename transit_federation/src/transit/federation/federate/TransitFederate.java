@@ -55,7 +55,6 @@ public abstract class TransitFederate {
 	protected abstract void configure() throws Exception;
 
 
-
 	public void receiveInteraction(InteractionClassHandle interactionClass, ParameterHandleValueMap parameters, byte[] tag, OrderType sentOrdering, TransportationTypeHandle transport,
 			SupplementalReceiveInfo receiveInfo) {
 
@@ -86,18 +85,18 @@ public abstract class TransitFederate {
 		System.out.println(federateName + " stopped.");
 	}
 
-//	public void runUntilStopped() throws Exception {
-//		start();
-//
-//		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-//			try {
-//				stop();
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
-//		}));
-//
-//		// Keep the application alive
-//		Thread.currentThread().join();
-//	}
+	public void runUntilStopped() throws Exception {
+		start();
+
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			try {
+				stop();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}));
+
+		// Keep the application alive
+		Thread.currentThread().join();
+	}
 }

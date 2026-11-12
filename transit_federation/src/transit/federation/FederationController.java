@@ -1,7 +1,6 @@
 package transit.federation;
 
 import java.net.URL;
-import java.util.Scanner;
 
 import hla.rti1516e.CallbackModel;
 import hla.rti1516e.NullFederateAmbassador;
@@ -9,7 +8,6 @@ import hla.rti1516e.RTIambassador;
 import hla.rti1516e.RtiFactoryFactory;
 import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
 import hla.rti1516e.exceptions.FederationExecutionAlreadyExists;
-import transit.federation.federate.TransitFederate;
 
 public class FederationController {
 
@@ -38,14 +36,12 @@ public class FederationController {
 		// 4. Create the federation
 		try {
 			rtiamb.createFederationExecution(FEDERATION_NAME, fom);
+			rtiamb.disconnect();
 			System.out.println("Federation created: " + FEDERATION_NAME);
 
 		} catch (FederationExecutionAlreadyExists e) {
 			System.out.println("Federation already exists.");
 		}
-
-		rtiamb.disconnect();
-		rtiamb = null;
 
 		// Keep connection open - federates will connect later
 		System.out.println("Portico RTI is running.");
@@ -57,14 +53,22 @@ public class FederationController {
 
 		System.out.println("Stopping federation...");
 
-		// Now all federates have resigned, safely destroy the federation
+		// Wait a moment to allow federates to finish resigning and the RTI
+		// to settle its multicast state. This prevents the "Async Messages no
+		// longer supported" error that occurs when the RTI tries to send
+		// DeleteObject via a connection that's in an inconsistent state.
+		System.out.println("Waiting for federates to fully resign...");
+		Thread.sleep(3000);
+
+		// Now all federates should have resigned - safely destroy the federation
 		try {
-			rtiamb = RtiFactoryFactory.getRtiFactory().getRtiAmbassador();
 			rtiamb.connect(new NullFederateAmbassador(), CallbackModel.HLA_IMMEDIATE);
 			rtiamb.destroyFederationExecution(FEDERATION_NAME);
 			System.out.println("Federation destroyed.");
 		} catch (FederatesCurrentlyJoined e) {
 			System.out.println("Cannot destroy federation: federates are still joined.");
+		} catch (Exception e) {
+			System.out.println("Error destroying federation: " + e.getMessage());
 		}
 
 		rtiamb.disconnect();
@@ -72,21 +76,10 @@ public class FederationController {
 		System.out.println("Controller disconnected.");
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 
 		FederationController controller = new FederationController();
+		controller.start();
 
-		try {
-			controller.start();
-
-			// Keep the controller alive
-			System.out.println("Press ENTER to stop.");
-			new Scanner(System.in).nextLine();
-
-			controller.stop();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 }

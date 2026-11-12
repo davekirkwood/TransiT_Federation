@@ -24,8 +24,13 @@ public class SUMOFederate extends TransitFederate {
 		
 		stopHandle = rtiamb.getInteractionClassHandle("StopSimulation");
 		rtiamb.subscribeInteractionClass(stopHandle);
+
+		federateShutdownHandle = rtiamb.getInteractionClassHandle("FederateShutdown");
+		rtiamb.publishInteractionClass(federateShutdownHandle);
 	}
-	
+
+	private InteractionClassHandle federateShutdownHandle;
+
 	@Override
 	protected void receiveApplicationInteraction(InteractionClassHandle interactionClass, ParameterHandleValueMap parameters, String sender) {
 		if (interactionClass.equals(timeTickHandle)) {
@@ -43,6 +48,7 @@ public class SUMOFederate extends TransitFederate {
 			System.out.println("SUMO RECEIVED StopSimulation");
 			try {
 				stop();
+				sendFederateShutdown();
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -50,6 +56,11 @@ public class SUMOFederate extends TransitFederate {
 		} else {
 			System.err.println(federateName + " RECEIVED Unknown interaction " + interactionClass);
 		}
+	}
+
+	private void sendFederateShutdown() throws Exception {
+		rtiamb.sendInteraction(federateShutdownHandle, rtiamb.getParameterHandleValueMapFactory().create(1), federateName.getBytes(StandardCharsets.UTF_8));
+		System.out.println(federateName + " SENT FederateShutdown");
 	}
 
 	public static void main(String[] args) throws Exception {
