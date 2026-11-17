@@ -9,48 +9,51 @@ import transit.federation.federate.TransitFederate;
 
 public class MATSimFederate extends TransitFederate {
 
+	public static final String MATSIM_NAME = "MATSim";
+	private InteractionClassHandle federateShutdown;
+
 	private Thread tickThread;
+	
+	private int replies = 0;		// TODO Change to sync on received times, rather than reply count
 
 	public MATSimFederate() {
-		super("MATSim");
+		super(MATSIM_NAME);
 	}
 
 	@Override
 	protected void configure() throws Exception {
-
+		super.configure();
 		/*
 		 * MATSim Timeticks (Publish)
 		 */
-		timeTickHandle = rtiamb.getInteractionClassHandle("TimeTick");
-		timeHandle = rtiamb.getParameterHandle(timeTickHandle, "Time");
-		rtiamb.publishInteractionClass(timeTickHandle);
+		handle_timeTick = rtiamb.getInteractionClassHandle("TimeTick");
+		handle_time = rtiamb.getParameterHandle(handle_timeTick, "Time");
+		rtiamb.publishInteractionClass(handle_timeTick);
 		System.out.println("MATSim publishing TimeTick");
 
-//		rtiamb.subscribeInteractionClass(timeTickHandle);
+		rtiamb.subscribeInteractionClass(handle_timeTick);
 
 		/*
 		 * Stop Simulation (Send)
 		 */
-		stopHandle = rtiamb.getInteractionClassHandle("StopSimulation");
-		rtiamb.publishInteractionClass(stopHandle);
-		
+		handle_stop = rtiamb.getInteractionClassHandle("StopSimulation");
+		rtiamb.publishInteractionClass(handle_stop);
+
 		/*
 		 * Federate Shutdown (Send)
 		 */
-		federateShutdownHandle = rtiamb.getInteractionClassHandle("FederateShutdown");
-		rtiamb.publishInteractionClass(federateShutdownHandle);
+		federateShutdown = rtiamb.getInteractionClassHandle("FederateShutdown");
+		rtiamb.publishInteractionClass(federateShutdown);
 
-		/*
-		 * Test Message (Publish)
-		 */
-		aMessageHandle = rtiamb.getInteractionClassHandle("A_Message");
-		textHandle = rtiamb.getParameterHandle(aMessageHandle, "Text");
-		rtiamb.publishInteractionClass(aMessageHandle);
-		System.out.println("MATSim publishing A_Message");
+//		/*
+//		 * Test Message (Publish)
+//		 */
+//		aMessageHandle = rtiamb.getInteractionClassHandle("A_Message");
+//		textHandle = rtiamb.getParameterHandle(aMessageHandle, "Text");
+//		rtiamb.publishInteractionClass(aMessageHandle);
+//		System.out.println("MATSim publishing A_Message");
 
 	}
-
-	private InteractionClassHandle federateShutdownHandle;
 
 	public void simulate() {
 		tickThread = new Thread(() -> {
@@ -64,9 +67,13 @@ public class MATSimFederate extends TransitFederate {
 						break;
 					} else {
 						sendTimeTick(simulationTime);
-						sendTestMessage();
+						replies = 0;
+//						sendTestMessage();
 						simulationTime += 1.0;
 						Thread.sleep(1000);
+						while(replies < otherFederates.size()) {
+							Thread.sleep(10);
+						}
 					}
 				} catch (InterruptedException e) {
 					break;
@@ -84,51 +91,50 @@ public class MATSimFederate extends TransitFederate {
 
 	/**
 	 * Send FederateShutdown interaction
+	 * 
 	 * @throws Exception
 	 */
 	private void sendFederateShutdown() throws Exception {
-		rtiamb.sendInteraction(federateShutdownHandle, rtiamb.getParameterHandleValueMapFactory().create(1), federateName.getBytes(StandardCharsets.UTF_8));
+		rtiamb.sendInteraction(federateShutdown, rtiamb.getParameterHandleValueMapFactory().create(1), federateName.getBytes(StandardCharsets.UTF_8));
 		System.out.println(federateName + " SENT FederateShutdown");
 	}
 
-	/**
-	 * Send Test message
-	 * 
-	 * @throws Exception
-	 */
-	public void sendTestMessage() throws Exception {
+//	/**
+//	 * Send Test message
+//	 * 
+//	 * @throws Exception
+//	 */
+//	public void sendTestMessage() throws Exception {
+//
+//		String message = "Hello BRaVE, this is MATSim!";
+//		ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(1);
+//		parameters.put(textHandle, message.getBytes(StandardCharsets.US_ASCII));
+//		rtiamb.sendInteraction(aMessageHandle, parameters, new byte[0]);
+//		System.out.println("MATSim SENT A_Message: " + message);
+//	}
 
-		String message = "Hello BRaVE, this is MATSim!";
-		ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(1);
-		parameters.put(textHandle, message.getBytes(StandardCharsets.US_ASCII));
-		rtiamb.sendInteraction(aMessageHandle, parameters, new byte[0]);
-		System.out.println("MATSim SENT A_Message: " + message);
-	}
-
-	/**
-	 * Send a time tick
-	 * 
-	 * @param time
-	 * @throws Exception
-	 */
-	protected void sendTimeTick(double time) throws Exception {
-
-		ParameterHandleValueMap parameters = rtiamb.getParameterHandleValueMapFactory().create(1);
-		byte[] encodedTime = ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putDouble(time).array();
-		parameters.put(timeHandle, encodedTime);
-		rtiamb.sendInteraction(timeTickHandle, parameters, federateName.getBytes(StandardCharsets.UTF_8));
-		System.out.println(federateName + " SENT TimeTick: " + time);
-	}
 
 	private void sendStopMessage() throws Exception {
-		rtiamb.sendInteraction(stopHandle, rtiamb.getParameterHandleValueMapFactory().create(1), federateName.getBytes(StandardCharsets.UTF_8));
+		rtiamb.sendInteraction(handle_stop, rtiamb.getParameterHandleValueMapFactory().create(1), federateName.getBytes(StandardCharsets.UTF_8));
 		System.out.println(federateName + " SENT StopSimulation");
 	}
 
 	@Override
 	protected void receiveApplicationInteraction(InteractionClassHandle interactionClass, ParameterHandleValueMap parameters, String sender) {
-		// TODO Auto-generated method stub
+		if (interactionClass.equals(handle_timeTick)) {
 
+			byte[] value = parameters.get(handle_time);
+
+			if (value == null || value.length != 8) {
+				System.err.println("Invalid TimeTick parameter");
+				return;
+			}
+			double time = ByteBuffer.wrap(value).order(ByteOrder.BIG_ENDIAN).getDouble();
+			System.out.println(federateName + " RECEIVED TimeTick " + time + " from " + sender);
+			replies++;
+		} else {
+			System.err.println(federateName + " RECEIVED Unknown interaction " + interactionClass);
+		}
 	}
 
 	public void stop() throws Exception {
@@ -140,19 +146,6 @@ public class MATSimFederate extends TransitFederate {
 		MATSimFederate matsim = new MATSimFederate();
 		matsim.start();
 		matsim.simulate();
-
-//		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-//			try {
-//				matsim.stop();
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
-//		}));
-//
-//		// Give BRaVE time to join and subscribe.
-//		Thread.sleep(3000);
-//
-//		Thread.currentThread().join();
 
 	}
 

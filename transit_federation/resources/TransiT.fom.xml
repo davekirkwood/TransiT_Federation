@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objectModel
+	xmlns="http://standards.ieee.org/IEEE1516-2010"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+	<modelIdentification>
+		<name>TransiTFederation</name>
+		<type>FOM</type>
+		<version>1.0</version>
+		<modificationDate>2026-11-17</modificationDate>
+		<securityClassification>Unclassified</securityClassification>
+		<purpose>TransiT Federation</purpose>
+		<applicationDomain>Simulation</applicationDomain>
+		<description>Three string messages and one time tick interaction</description>
+	</modelIdentification>
+
+	<objects>
+		<objectClass>
+			<name>HLAobjectRoot</name>
+		</objectClass>
+	</objects>
+
+	<dataTypes>
+		<enumeratedDataTypes>
+			<enumeratedData>
+				<name>LegTypeEnum</name>
+				<representation>HLAinteger32BE</representation>
+				<semantics>Transport mode for an agent leg</semantics>
+				<enumerator>
+					<name>RAIL</name>
+					<value>0</value>
+				</enumerator>
+				<enumerator>
+					<name>ROAD</name>
+					<value>1</value>
+				</enumerator>
+				<enumerator>
+					<name>WALK</name>
+					<value>2</value>
+				</enumerator>
+				<enumerator>
+					<name>BIKE</name>
+					<value>3</value>
+				</enumerator>
+			</enumeratedData>
+		</enumeratedDataTypes>
+	</dataTypes>
+
+	<interactions>
+		<interactionClass>
+			<name>HLAinteractionRoot</name>
+
+			<interactionClass>
+				<name>Join</name>
+				<parameter>
+					<name>FederateName</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+			</interactionClass>
+			
+			<interactionClass>
+				<name>Status</name>
+				<parameter>
+					<name>Federates</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+			</interactionClass>
+
+			<interactionClass>
+				<name>TimeTick</name>
+				<parameter>
+					<name>Time</name>
+					<dataType>HLAfloat64BE</dataType>
+				</parameter>
+			</interactionClass>
+
+			<interactionClass>
+				<name>Agent_LegStart</name>
+				<parameter>
+					<name>agentId</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+				<parameter>
+					<name>legType</name>
+					<dataType>LegTypeEnum</dataType>
+				</parameter>
+				<parameter>
+					<name>originLocation</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+				<parameter>
+					<name>destinationLocation</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+			</interactionClass>
+
+			<interactionClass>
+				<name>Agent_Departure</name>
+				<parameter>
+					<name>agentId</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+				<parameter>
+					<name>trainId</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+			</interactionClass>
+
+			<interactionClass>
+				<name>Agent_Arrival</name>
+				<parameter>
+					<name>agentId</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+				<parameter>
+					<name>trainId</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+			</interactionClass>
+
+			<interactionClass>
+				<name>Train_Departure</name>
+				<parameter>
+					<name>agentId</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+				<parameter>
+					<name>stopId</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+			</interactionClass>
+
+			<interactionClass>
+				<name>Train_Arrival</name>
+				<parameter>
+					<name>agentId</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+				<parameter>
+					<name>stopId</name>
+					<dataType>HLAASCIIstring</dataType>
+				</parameter>
+			</interactionClass>
+
+			<interactionClass>
+				<name>StopSimulation</name>
+			</interactionClass>
+
+			<interactionClass>
+				<name>FederateShutdown</name>
+			</interactionClass>
+
+		</interactionClass>
+	</interactions>
+</objectModel>

@@ -16,14 +16,15 @@ public class SUMOFederate extends TransitFederate {
 
 	@Override
 	protected void configure() throws Exception {
-		timeTickHandle = rtiamb.getInteractionClassHandle("TimeTick");
-		timeHandle = rtiamb.getParameterHandle(timeTickHandle, "Time");
+		super.configure();
+		handle_timeTick = rtiamb.getInteractionClassHandle("TimeTick");
+		handle_time = rtiamb.getParameterHandle(handle_timeTick, "Time");
 
-		rtiamb.publishInteractionClass(timeTickHandle);
-		rtiamb.subscribeInteractionClass(timeTickHandle);
+		rtiamb.publishInteractionClass(handle_timeTick);
+		rtiamb.subscribeInteractionClass(handle_timeTick);
 		
-		stopHandle = rtiamb.getInteractionClassHandle("StopSimulation");
-		rtiamb.subscribeInteractionClass(stopHandle);
+		handle_stop = rtiamb.getInteractionClassHandle("StopSimulation");
+		rtiamb.subscribeInteractionClass(handle_stop);
 
 		federateShutdownHandle = rtiamb.getInteractionClassHandle("FederateShutdown");
 		rtiamb.publishInteractionClass(federateShutdownHandle);
@@ -33,18 +34,25 @@ public class SUMOFederate extends TransitFederate {
 
 	@Override
 	protected void receiveApplicationInteraction(InteractionClassHandle interactionClass, ParameterHandleValueMap parameters, String sender) {
-		if (interactionClass.equals(timeTickHandle)) {
+		if (interactionClass.equals(handle_timeTick)) {
 
-			byte[] value = parameters.get(timeHandle);
+			byte[] value = parameters.get(handle_time);
 
 			if (value == null || value.length != 8) {
 				System.err.println("Invalid TimeTick parameter");
 				return;
 			}
 			double time = ByteBuffer.wrap(value).order(ByteOrder.BIG_ENDIAN).getDouble();
-
 			System.out.println(federateName + " RECEIVED TimeTick " + time + " from " + sender);
-		} else if (interactionClass.equals(stopHandle)) {
+			if(sender.equals(MATSimFederate.MATSIM_NAME)) {	
+				try {
+					sendTimeTick(time);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		} else if (interactionClass.equals(handle_stop)) {
 			System.out.println("SUMO RECEIVED StopSimulation");
 			try {
 				stop();

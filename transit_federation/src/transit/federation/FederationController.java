@@ -2,6 +2,8 @@
 package transit.federation;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.portico2.common.configuration.RID;
@@ -12,6 +14,7 @@ import hla.rti1516e.InteractionClassHandle;
 import hla.rti1516e.ParameterHandleValueMap;
 import hla.rti1516e.ResignAction;
 import hla.rti1516e.RtiFactoryFactory;
+import hla.rti1516e.encoding.DecoderException;
 import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
 import hla.rti1516e.exceptions.FederationExecutionAlreadyExists;
 import transit.federation.federate.TransitFederate;
@@ -19,183 +22,173 @@ import transit.federation.federate.TransitFederateAmbassador;
 
 public class FederationController extends TransitFederate {
 
-    private static final String FEDERATION_NAME = "TransiTFederation";
+	private static final String FEDERATION_NAME = "TransiTFederation";
 
-    private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
+	private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
-    RTI porticoServer;
-    
-    public FederationController() {
-        super("Controller");
-    }
 
-    @Override
-    public void start() throws Exception {
+	RTI porticoServer;
 
-        System.out.println("Starting Portico RTI...");
+	private List<String> federates = new ArrayList<>();
+
+	public FederationController() {
+		super("Controller");
+	}
+
+	@Override
+	public void start() throws Exception {
+
+		System.out.println("Starting Portico RTI...");
 
 //        org.portico.Main.main(new String[] { "rti" });
-        
-        RID rid = RID.loadRid(new String[0]);
 
-        porticoServer = new RTI(rid);
-        porticoServer.startup();
+		RID rid = RID.loadRid(new String[0]);
 
-        System.out.println("Portico RTI started.");
-        
-        
-        rtiamb = RtiFactoryFactory
-                .getRtiFactory()
-                .getRtiAmbassador();
+		porticoServer = new RTI(rid);
+		porticoServer.startup();
 
-        rtiamb.connect(
-                new TransitFederateAmbassador(this),
-                CallbackModel.HLA_IMMEDIATE
-        );
+		System.out.println("Portico RTI started.");
 
-        URL fom = getClass().getResource("/Simple.fom.xml");
+		rtiamb = RtiFactoryFactory.getRtiFactory().getRtiAmbassador();
 
-        if (fom == null) {
-            throw new IllegalStateException(
-                    "Cannot find Simple.fom.xml"
-            );
-        }
+		rtiamb.connect(new TransitFederateAmbassador(this), CallbackModel.HLA_IMMEDIATE);
 
-        try {
-            rtiamb.createFederationExecution(FEDERATION_NAME, fom);
-            System.out.println("Federation created.");
+		URL fom = getClass().getResource("/TransiT.fom.xml");
 
-        } catch (FederationExecutionAlreadyExists e) {
-            System.out.println("Federation already exists.");
-        }
+		if (fom == null) {
+			throw new IllegalStateException("Cannot find fom");
+		}
 
-        // Controller joins as a monitoring federate
-        rtiamb.joinFederationExecution(
-                federateName,
-                "SimpleFederateType",
-                FEDERATION_NAME
-        );
+		try {
+			rtiamb.createFederationExecution(FEDERATION_NAME, fom);
+			System.out.println("Federation created.");
 
-        joinedController = true;
+		} catch (FederationExecutionAlreadyExists e) {
+			System.out.println("Federation already exists.");
+		}
 
-        configure();
+		// Controller joins as a monitoring federate
+		rtiamb.joinFederationExecution(federateName, "SimpleFederateType", FEDERATION_NAME);
 
-        System.out.println("Controller joined federation.");
-        System.out.println("Waiting for StopSimulation...");
-    }
+		joinedController = true;
 
-    private volatile boolean joinedController = false;
+		configure();
 
-    @Override
-    protected void configure() throws Exception {
+		System.out.println("Controller joined federation.");
+		System.out.println("Waiting for StopSimulation...");
+	}
 
-        stopHandle = rtiamb.getInteractionClassHandle("StopSimulation");
+	private volatile boolean joinedController = false;
 
-        rtiamb.subscribeInteractionClass(stopHandle);
+	@Override
+	protected void configure() throws Exception {
+		super.configure();
+		rtiamb.subscribeInteractionClass(handle_join);
 
-        System.out.println("Controller subscribed to StopSimulation.");
-    }
+		handle_stop = rtiamb.getInteractionClassHandle("StopSimulation");
+		rtiamb.subscribeInteractionClass(handle_stop);
 
-    @Override
-    protected void receiveApplicationInteraction(
-            InteractionClassHandle interactionClass,
-            ParameterHandleValueMap parameters,
-            String sender) {
+		handle_status = rtiamb.getInteractionClassHandle("Status");
+		handle_status_federates = rtiamb.getParameterHandle(handle_status, "Federates");
+		rtiamb.publishInteractionClass(handle_status);
+		
+		System.out.println("Controller subscribed to StopSimulation.");
+	}
 
-        if (interactionClass.equals(stopHandle)) {
+	@Override
+	protected void receiveApplicationInteraction(InteractionClassHandle interactionClass, ParameterHandleValueMap parameters, String sender) {
+		if (interactionClass.equals(handle_join)) {
 
-            System.out.println("Controller RECEIVED StopSimulation");
+			try {
+				decoder.decode(parameters.get(handle_join_federateName));
+			} catch (DecoderException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			String federateName = decoder.getValue();
 
-            // Only initiate shutdown once
-            if (shuttingDown.compareAndSet(false, true)) {
+			System.out.println("Controller detected join: " + federateName);
+			federates.add(federateName);
+			
+			String fcsv = "";
+			for(String f : federates) {
+				fcsv += (fcsv.length() > 0 ? "," : "") + f;
+			}
+			try {
+				sendStringInteraction(handle_status, handle_status_federates, fcsv);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
-                Thread shutdownThread = new Thread(() -> {
-                    try {
-                        shutdown();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }, "FederationController-Shutdown");
+		} else if (interactionClass.equals(handle_stop)) {
 
-                shutdownThread.start();
-            }
-        }
-    }
+			System.out.println("Controller RECEIVED StopSimulation");
 
-//    private static void printActiveThreads() {
-//
-//       System.out.println("\nActive non-daemon threads:");
-//
-//       Thread.getAllStackTraces().forEach((thread, stack) -> {
-//
-//           if (thread.isAlive() && !thread.isDaemon()) {
-//
-//               System.out.println(
-//                   "\nThread: " + thread.getName()
-//                   + " | State: " + thread.getState()
-//               );
-//
-//               for (StackTraceElement element : stack) {
-//                   System.out.println("    " + element);
-//               }
-//           }
-//       });
-//   }
-    
-    private void shutdown() throws Exception {
+			// Only initiate shutdown once
+			if (shuttingDown.compareAndSet(false, true)) {
 
-        System.out.println("Controller shutting down...");
+				Thread shutdownThread = new Thread(() -> {
+					try {
+						shutdown();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}, "FederationController-Shutdown");
 
-        // Controller must leave the federation first
-        if (joinedController) {
+				shutdownThread.start();
+			}
+		}
+	}
 
-            rtiamb.resignFederationExecution(
-                    ResignAction.DELETE_OBJECTS
-            );
+	private void shutdown() throws Exception {
 
-            joinedController = false;
+		System.out.println("Controller shutting down...");
 
-            System.out.println("Controller resigned.");
-        }
+		// Controller must leave the federation first
+		if (joinedController) {
 
-        // Wait for remaining federates to resign
-        destroyWhenEmpty();
+			rtiamb.resignFederationExecution(ResignAction.DELETE_OBJECTS);
 
-        // Disconnect after federation destruction
-        rtiamb.disconnect();
+			joinedController = false;
 
-        System.out.println("Controller disconnected.");
-        System.out.println("Federation shutdown complete.");
-        porticoServer.shutdown();
+			System.out.println("Controller resigned.");
+		}
 
-//        printActiveThreads();
-//        System.exit(0);
-    }
+		// Wait for remaining federates to resign
+		destroyWhenEmpty();
 
-    private void destroyWhenEmpty() throws Exception {
+		// Disconnect after federation destruction
+		rtiamb.disconnect();
 
-        while (true) {
+		System.out.println("Controller disconnected.");
+		System.out.println("Federation shutdown complete.");
+		porticoServer.shutdown();
 
-            try {
-                rtiamb.destroyFederationExecution(FEDERATION_NAME);
+	}
 
-                System.out.println("Federation destroyed.");
-                return;
+	private void destroyWhenEmpty() throws Exception {
 
-            } catch (FederatesCurrentlyJoined e) {
+		while (true) {
 
-                System.out.println(
-                        "Waiting for remaining federates to resign..."
-                );
+			try {
+				rtiamb.destroyFederationExecution(FEDERATION_NAME);
 
-                Thread.sleep(500);
-            }
-        }
-    }
+				System.out.println("Federation destroyed.");
+				return;
 
-    public static void main(String[] args) throws Exception {
+			} catch (FederatesCurrentlyJoined e) {
 
-        FederationController controller = new FederationController();
-        controller.start();
-    }
+				System.out.println("Waiting for remaining federates to resign...");
+
+				Thread.sleep(500);
+			}
+		}
+	}
+
+	public static void main(String[] args) throws Exception {
+
+		FederationController controller = new FederationController();
+		controller.start();
+	}
 }
